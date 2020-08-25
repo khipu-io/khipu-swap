@@ -1,0 +1,284 @@
+
+import net.ltgt.gradle.errorprone.CheckSeverity
+
+plugins {
+  id 'com.diffplug.gradle.spotless' version '3.25.0'
+  id 'com.jfrog.bintray' version '1.8.4'
+  id 'com.github.ben-manes.versions' version '0.26.0'
+  id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+  id 'me.champeau.gradle.jmh' version '0.5.0' apply false
+  id 'net.ltgt.errorprone' version '1.1.1'
+}
+
+if (!JavaVersion.current().java11Compatible) {
+  throw new GradleException("Java 11 or later is required to build Besu.\n" +
+  "  Detected version ${JavaVersion.current()}")
+}
+
+group = 'khipu'
+
+defaultTasks 'build', 'javadoc'
+
+def buildAliases = ['dev': [
+    'spotlessApply',
+    'build',
+    'javadoc'
+  ]]
+
+def expandedTaskList = []
+gradle.startParameter.taskNames.each {
+  expandedTaskList << (buildAliases[it] ? buildAliases[it] : it)
+}
+gradle.startParameter.taskNames = expandedTaskList.flatten()
+
+// Gets an integer command argument, passed with -Pname=x, or the default if not provided.
+def _intCmdArg(name, defaultValue) {
+  return project.hasProperty(name) ? project.property(name) as int : defaultValue
+}
+
+def _intCmdArg(name) {
+  return _intCmdArg(name, null)
+}
+
+def _strListCmdArg(name, defaultValue) {
+  if (!project.hasProperty(name))
+    return defaultValue
+
+  return ((String) project.property(name)).tokenize(',')
+}
+
+def _strListCmdArg(name) {
+  return _strListCmdArg(name, null)
+}
+
+allprojects {
+  apply plugin: 'java-library'
+  apply plugin: 'io.spring.dependency-management'
+  apply plugin: 'net.ltgt.errorprone'
+  apply from: "${rootDir}/gradle/versions.gradle"
+
+  version = rootProject.version
+
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
+  task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+  }
+
+  sourceCompatibility = 11
+  targetCompatibility = 11
+
+  repositories {
+    jcenter()
+    mavenCentral()
+    mavenLocal()
+    maven { url "https://hyperledger-org.bintray.com/besu-repo" }
+    maven { url "https://repo.spring.io/libs-release" }
+  }
+
+  dependencies { errorprone "com.google.errorprone:error_prone_core" }
+
+  apply plugin: 'com.diffplug.gradle.spotless'
+  spotless {
+    java {
+      // This path needs to be relative to each project
+      target fileTree('.') {
+        include '**/src/*/java/**/*.java'
+        exclude '**/generalstate/GeneralStateReferenceTest*.java'
+        exclude '**/generalstate/GeneralStateRegressionReferenceTest*.java'
+        exclude '**/blockchain/BlockchainReferenceTest*.java'
+        exclude '**/.gradle/**'
+      }
+      removeUnusedImports()
+      googleJavaFormat('1.7')
+      //importOrder 'com', 'java', 'khipu', 'org', ''
+      trimTrailingWhitespace()
+      endWithNewline()
+    }
+    groovyGradle {
+      target '*.gradle'
+      greclipse().configFile(rootProject.file('gradle/formatter.properties'))
+      endWithNewline()
+      paddedCell()
+    }
+
+    // Below this line are currently only license header tasks
+    format 'groovy', { target '**/src/*/grovy/**/*.groovy' }
+
+    // Currently disabled due to referencetest issues
+    //  format 'bash', {
+    //    target fileTree('.') {
+    //      include '**/*.sh'
+    //     exclude '**/ansible/**'
+    //    }
+    //  }
+    //  format 'sol', {
+    //    target fileTree('.') { include '**/*.sol' }
+    //  }
+  }
+
+  tasks.withType(JavaCompile) {
+    options.compilerArgs += [
+      '-Xlint:unchecked',
+      '-Xlint:cast',
+      '-Xlint:rawtypes',
+      '-Xlint:overloads',
+      '-Xlint:divzero',
+      '-Xlint:finally',
+      '-Xlint:static',
+      '-Werror',
+    ]
+
+    options.errorprone {
+      excludedPaths = '.*/(generated/*.*|.*ReferenceTest_.*)'
+
+      // Our equals need to be symmetric, this checker doesn't respect that.
+      check('EqualsGetClass', CheckSeverity.OFF)
+      // We like to use futures with no return values.
+      check('FutureReturnValueIgnored', CheckSeverity.OFF)
+      // We use the JSR-305 annotations instead of the Google annotations.
+      check('ImmutableEnumChecker', CheckSeverity.OFF)
+      // This is a style check instead of an error-prone pattern.
+      check('UnnecessaryParentheses', CheckSeverity.OFF)
+
+      // This check is broken in Java 12.  See https://github.com/google/error-prone/issues/1257
+      if (JavaVersion.current() == JavaVersion.VERSION_12) {
+        check('Finally', CheckSeverity.OFF)
+      }
+      // This check is broken after Java 12.  See https://github.com/google/error-prone/issues/1352
+      if (JavaVersion.current() > JavaVersion.VERSION_12) {
+        check('TypeParameterUnusedInFormals', CheckSeverity.OFF)
+      }
+
+      check('FieldCanBeFinal', CheckSeverity.WARN)
+      check('InsecureCryptoUsage', CheckSeverity.WARN)
+      check('WildcardImport', CheckSeverity.WARN)
+    }
+
+    options.encoding = 'UTF-8'
+  }
+
+  javadoc {
+    failOnError = false
+    options.addStringOption('Xdoclint:all', '-quiet')
+    options.addStringOption('Xwerror', '-html5')
+    options.encoding = 'UTF-8'
+  }
+
+  dependencies {
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    implementation 'com.google.guava:guava'
+    implementation 'com.graphql-java:graphql-java'
+    implementation 'com.splunk.logging:splunk-library-javalogging'
+    implementation 'info.picocli:picocli'
+    implementation 'io.vertx:vertx-core'
+    implementation 'org.apache.logging.log4j:log4j-core'
+    implementation 'org.springframework.security:spring-security-crypto'
+
+    implementation 'org.hyperledger.besu.internal:api'
+    implementation 'org.hyperledger.besu.internal:besu'
+    implementation 'org.hyperledger.besu.internal:blockcreation'
+    implementation 'org.hyperledger.besu.internal:core'
+    implementation 'org.hyperledger.besu.internal:common'
+    implementation 'org.hyperledger.besu.internal:config'
+    implementation 'org.hyperledger.besu.internal:crypto'
+    implementation 'org.hyperledger.besu.internal:enclave'
+    implementation 'org.hyperledger.besu.internal:eth'
+    implementation 'org.hyperledger.besu.internal:ibft'
+    implementation 'org.hyperledger.besu.internal:metrics-core'
+    implementation 'org.hyperledger.besu.internal:nat'
+    implementation 'org.hyperledger.besu.internal:p2p'
+    implementation 'org.hyperledger.besu.internal:permissioning'
+    implementation 'org.hyperledger.besu.internal:plugins-rocksdb'
+    implementation 'org.hyperledger.besu.internal:retesteth'
+    implementation 'org.hyperledger.besu.internal:rlp'
+    implementation 'org.hyperledger.besu.internal:stratum'
+    implementation 'org.hyperledger.besu.internal:trie'
+    implementation 'org.hyperledger.besu.internal:util'
+    implementation 'org.hyperledger.besu:plugin-api'
+  }
+}
+
+jar
+
+apply plugin: 'application'
+mainClassName = 'khipu.swanp.Swap'
+applicationDefaultJvmArgs = [
+  '-Dvertx.disableFileCPResolving=true',
+  // KHIPU_HOME is replaced by a doFirst block in the run task.
+  '-Dbesu.home=KHIPU_HOME',
+  // We shutdown log4j ourselves, as otherwise this shutdown hook runs before our own and whatever
+  // happens during shutdown is not logged.
+  '-Dlog4j.shutdownHookEnabled=false',
+  // Suppress Java JPMS warnings.  Document the reason for each suppression.
+  // Bouncy Castle needs access to sun.security.provider, which is not open by default.
+  '--add-opens',
+  'java.base/sun.security.provider=ALL-UNNAMED',
+  // Jackson likes to access java.util.OptionalLong's constructor
+  '--add-opens',
+  'java.base/java.util=ALL-UNNAMED',
+  // suppress netty specific module warnings in debug
+  "-Dio.netty.tryReflectionSetAccessible=true",
+  "--add-exports",
+  "java.base/jdk.internal.misc=ALL-UNNAMED",
+  "--add-opens",
+  "java.base/java.nio=ALL-UNNAMED"
+]
+
+run {
+  args project.hasProperty("besu.run.args") ? project.property("besu.run.args").toString().split("\\s+") : []
+  doFirst {
+    applicationDefaultJvmArgs = applicationDefaultJvmArgs.collect {
+      it.replace('KHIPU_HOME', "$buildDir/khipu-swap")
+    }
+  }
+}
+
+startScripts {
+
+  def shortenWindowsClasspath = { line ->
+    line = line.replaceAll(/^set CLASSPATH=.*$/, "set CLASSPATH=%APP_HOME%/lib/*")
+  }
+
+  doLast {
+    unixScript.text = unixScript.text.replace('KHIPU_HOME', '\$APP_HOME')
+    windowsScript.text = windowsScript.text.replace('KHIPU_HOME', '%~dp0..')
+
+    // Prevent the error originating from the 8191 chars limit on Windows
+    windowsScript.text =
+      windowsScript
+      .readLines()
+      .collect(shortenWindowsClasspath)
+      .join('\r\n')
+  }
+}
+
+
+dependencies {
+  implementation project(':khipu-besu')
+}
+
+installDist {
+  //dependsOn checkLicenses
+}
+
+distTar {
+  //dependsOn checkLicenses
+  doFirst {
+    delete fileTree(dir: 'build/distributions', include: '*.tar.gz')
+  }
+  compression = Compression.GZIP
+  archiveExtension = 'tar.gz'
+}
+
+distZip {
+  //dependsOn checkLicenses
+  doFirst {
+    delete fileTree(dir: 'build/distributions', include: '*.zip')
+  }
+}
