@@ -3,10 +3,10 @@ pragma solidity ^0.5.10;
 /** @title Relay */
 /** @author Summa (https://summa.one) */
 
-import {SafeMath} from "@summa-tx/bitcoin-spv-sol/contracts/SafeMath.sol";
-import {TypedMemView} from "@summa-tx/bitcoin-spv-sol/contracts/TypedMemView.sol";
-import {ViewBTC} from "@summa-tx/bitcoin-spv-sol/contracts/ViewBTC.sol";
-import {ViewSPV} from "@summa-tx/bitcoin-spv-sol/contracts/ViewSPV.sol";
+import {SafeMath} from "./bitcoin-spv/SafeMath.sol";
+import {TypedMemView} from "./bitcoin-spv/TypedMemView.sol";
+import {ViewBTC} from "./bitcoin-spv/ViewBTC.sol";
+import {ViewSPV} from "./bitcoin-spv/ViewSPV.sol";
 import {IRelay} from "./Interfaces.sol";
 
 contract Relay is IRelay {

@@ -4,7 +4,7 @@ pragma solidity ^0.5.10;
 /** @author Summa (https://summa.one) */
 
 import {OnDemandSPV} from "./OnDemandSPV.sol";
-import {TypedMemView} from "@summa-tx/bitcoin-spv-sol/contracts/TypedMemView.sol";
+import {TypedMemView} from "./bitcoin-spv/TypedMemView.sol";
 
 contract TestnetRelay is OnDemandSPV {
 
