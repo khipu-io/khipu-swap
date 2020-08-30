@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title ViewSPV */
 /** @author Summa (https://summa.one) */
@@ -70,7 +72,7 @@ contract ViewSPVTest {
     /// @notice             Checks validity of header chain
     /// @notice             Compares the hash of each header to the prevHash in the next header
     /// @param _headers     Raw byte array of header chain
-    /// @return             The total accumulated difficulty of the header chain
+    /// @return             _reqDiff The total accumulated difficulty of the header chain
     function checkChain(bytes memory _headers) public view returns (uint256 _reqDiff) {
         return _headers.ref(0).tryAsHeaderArray().assertValid().checkChain();
     }
@@ -78,7 +80,7 @@ contract ViewSPVTest {
     /// @notice             Checks validity of header chain
     /// @notice             Compares the hash of each header to the prevHash in the next header
     /// @param _headers     Raw byte array of header chain
-    /// @return             The total accumulated difficulty of the header chain
+    /// @return             _reqDiff The total accumulated difficulty of the header chain
     function checkChainTx(bytes memory _headers) public view returns (uint256 _reqDiff) {
         return _headers.ref(0).tryAsHeaderArray().assertValid().checkChain();
     }

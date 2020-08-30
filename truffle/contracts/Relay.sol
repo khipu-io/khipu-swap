@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title Relay */
 /** @author Summa (https://summa.one) */
@@ -59,34 +61,34 @@ contract Relay is IRelay {
     /// @notice     Getter for currentEpochDiff
     /// @dev        This is updated when a new heavist header has a new diff
     /// @return     The difficulty of the bestKnownDigest
-    function getCurrentEpochDifficulty() external view returns (uint256) {
+    function getCurrentEpochDifficulty() override external view returns (uint256) {
         return currentEpochDiff;
     }
     /// @notice     Getter for prevEpochDiff
     /// @dev        This is updated when a difficulty change is accepted
     /// @return     The difficulty of the previous epoch
-    function getPrevEpochDifficulty() external view returns (uint256) {
+    function getPrevEpochDifficulty() override external view returns (uint256) {
         return prevEpochDiff;
     }
 
     /// @notice     Getter for relayGenesis
     /// @dev        This is an initialization parameter
     /// @return     The hash of the first block of the relay
-    function getRelayGenesis() public view returns (bytes32) {
+    function getRelayGenesis() override public view returns (bytes32) {
         return relayGenesis;
     }
 
     /// @notice     Getter for bestKnownDigest
     /// @dev        This updated only by calling markNewHeaviest
     /// @return     The hash of the best marked chain tip
-    function getBestKnownDigest() public view returns (bytes32) {
+    function getBestKnownDigest() override public view returns (bytes32) {
         return bestKnownDigest;
     }
 
     /// @notice     Getter for relayGenesis
     /// @dev        This is updated only by calling markNewHeaviest
     /// @return     The hash of the shared ancestor of the most recent fork
-    function getLastReorgCommonAncestor() public view returns (bytes32) {
+    function getLastReorgCommonAncestor() override public view returns (bytes32) {
         return lastReorgCommonAncestor;
     }
 
@@ -94,7 +96,7 @@ contract Relay is IRelay {
     /// @dev            Will fail if the header is unknown
     /// @param _digest  The header digest to search for
     /// @return         The height of the header, or error if unknown
-    function findHeight(bytes32 _digest) external view returns (uint256) {
+    function findHeight(bytes32 _digest) override external view returns (uint256) {
         return _findHeight(_digest);
     }
 
@@ -102,7 +104,7 @@ contract Relay is IRelay {
     /// @dev            Will fail if the header is unknown
     /// @param _digest  The header digest to search for
     /// @return         The height of the header, or error if unknown
-    function findAncestor(bytes32 _digest, uint256 _offset) external view returns (bytes32) {
+    function findAncestor(bytes32 _digest, uint256 _offset) override external view returns (bytes32) {
         return _findAncestor(_digest, _offset);
     }
 
@@ -112,7 +114,7 @@ contract Relay is IRelay {
     /// @param _descendant  The descendant to check
     /// @param _limit       The maximum number of blocks to check
     /// @return             true if ancestor is at most limit blocks lower than descendant, otherwise false
-    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool) {
+    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) override external view returns (bool) {
         return _isAncestor(_ancestor, _descendant, _limit);
     }
 
@@ -121,7 +123,7 @@ contract Relay is IRelay {
     /// @param  _anchor     The header immediately preceeding the new chain
     /// @param  _headers    A tightly-packed list of 80-byte Bitcoin headers
     /// @return             True if successfully written, error otherwise
-    function addHeaders(bytes calldata _anchor, bytes calldata _headers) external returns (bool) {
+    function addHeaders(bytes calldata _anchor, bytes calldata _headers) override external returns (bool) {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
@@ -141,7 +143,7 @@ contract Relay is IRelay {
         bytes calldata _oldPeriodStartHeader,
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
-    ) external returns (bool) {
+    ) override external returns (bool) {
         bytes29 _oldStart = _oldPeriodStartHeader.ref(0).tryAsHeader();
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
@@ -166,7 +168,7 @@ contract Relay is IRelay {
         bytes calldata _currentBest,
         bytes calldata _newBest,
         uint256 _limit
-    ) external returns (bool) {
+    ) override external returns (bool) {
         bytes29 _new = _newBest.ref(0).tryAsHeader();
         bytes29 _current = _currentBest.ref(0).tryAsHeader();
         require(
@@ -182,8 +184,8 @@ contract Relay is IRelay {
     /// @param  _headers    A tightly-packed list of new 80-byte Bitcoin headers to record
     /// @param  _internal   True if called internally from addHeadersWithRetarget, false otherwise
     /// @return             True if successfully written, error otherwise
-    function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) internal returns (bool) {
-        /// Extract basic info
+    function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) virtual internal returns (bool) {
+        // Extract basic info
         bytes32 _previousDigest = _anchor.hash256();
         uint256 _anchorHeight = _findHeight(_previousDigest);  /* NB: errors if unknown */
         uint256 _target = _headers.indexHeaderArray(0).target();
@@ -327,7 +329,7 @@ contract Relay is IRelay {
     /// @param _descendant  The descendant to check
     /// @param _limit       The maximum number of blocks to check
     /// @return             true if ancestor is at most limit blocks lower than descendant, otherwise false
-    function _isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) internal view returns (bool) {
+    function _isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) virtual internal view returns (bool) {
         bytes32 _current = _descendant;
         /* NB: 200 gas/read, so gas is capped at ~200 * limit */
         for (uint256 i = 0; i < _limit; i = i.add(1)) {

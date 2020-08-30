@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title BitcoinSPV */
 /** @author Summa (https://summa.one) */
@@ -65,7 +67,7 @@ library ViewBTC {
     /// @notice             reads a compact int from the view at the specified index
     /// @param memView      a 29-byte view with a 5-byte type
     /// @param _index       the index
-    /// @return             the compact int at the specified index
+    /// @return             number the compact int at the specified index
     function indexCompactInt(bytes29 memView, uint256 _index) internal pure returns (uint64 number) {
         uint256 flag = memView.indexUint(_index, 1);
         if (flag <= 0xfc) {
@@ -438,15 +440,15 @@ library ViewBTC {
     /// @dev             Not recommended to call directly.
     /// @param _a        The first hash
     /// @param _b        The second hash
-    /// @return          The double-sha256 of the concatenated hashes
+    /// @return          digest The double-sha256 of the concatenated hashes
     function _merkleStep(bytes32 _a, bytes32 _b) internal view returns (bytes32 digest) {
         assembly {
             // solium-disable-previous-line security/no-inline-assembly
             let ptr := mload(0x40)
             mstore(ptr, _a)
             mstore(add(ptr, 0x20), _b)
-            pop(staticcall(gas, 2, ptr, 0x40, ptr, 0x20)) // sha2 #1
-            pop(staticcall(gas, 2, ptr, 0x20, ptr, 0x20)) // sha2 #2
+            pop(staticcall(gas(), 2, ptr, 0x40, ptr, 0x20)) // sha2 #1
+            pop(staticcall(gas(), 2, ptr, 0x20, ptr, 0x20)) // sha2 #2
             digest := mload(ptr)
         }
     }

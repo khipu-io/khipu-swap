@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title OnDemandSPV */
 /** @author Summa (https://summa.one) */
@@ -62,7 +64,7 @@ contract OnDemandSPV is ISPVRequestManager, Relay {
     /// @dev                    Prevents the relay from forwarding tx infromation
     /// @param  _requestID      The ID of the request to be cancelled
     /// @return                 True if succesful, error otherwise
-    function cancelRequest(uint256 _requestID) external returns (bool) {
+    function cancelRequest(uint256 _requestID) override external returns (bool) {
         ProofRequest storage _req = requests[_requestID];
         require(_req.state == RequestStates.ACTIVE, "Request not active");
         require(msg.sender == _req.consumer || msg.sender == _req.owner, "Can only be cancelled by owner or consumer");
@@ -78,10 +80,17 @@ contract OnDemandSPV is ISPVRequestManager, Relay {
     /// @notice             Retrieve info about a request
     /// @dev                Requests ids are numerical
     /// @param  _requestID  The numerical ID of the request
-    /// @return             A tuple representation of the request struct
-    function getRequest(
+    /// @return             spends To save space `spends` are stored as keccak256 hashes of the original information
+    /// @return             pays To save space `pays` are stored as keccak256 hashes of the original information
+    /// @return             paysValue
+    /// @return             state The `state` is `0` for "does not exist", `1` for "active" and `2` for "cancelled."
+    /// @return             consumer 
+    /// @return             owner 
+    /// @return             numConfs 
+    /// @return             notBefore
+     function getRequest(
         uint256 _requestID
-    ) external view returns (
+    ) override external view returns (
         bytes32 spends,
         bytes32 pays,
         uint64 paysValue,
@@ -118,7 +127,7 @@ contract OnDemandSPV is ISPVRequestManager, Relay {
         address _consumer,
         uint8 _numConfs,
         uint256 _notBefore
-    ) external returns (uint256) {
+    ) override external returns (uint256) {
         return _request(_spends, _pays, _paysValue, _consumer, _numConfs, _notBefore);
     }
 
@@ -263,7 +272,7 @@ contract OnDemandSPV is ISPVRequestManager, Relay {
         We want to make the remote call, but we don't care about results
         We use the low-level call so that we can ignore reverts and set gas
         */
-        address(c).call.gas(remoteGasAllowance)(
+        address(c).call{gas: remoteGasAllowance}(
             abi.encodePacked(
                 c.spv.selector,
                 abi.encode(_txid, _vin, _vout, _requestID, _inputIndex, _outputIndex)
@@ -318,7 +327,7 @@ contract OnDemandSPV is ISPVRequestManager, Relay {
     /// @dev                Bounded to 6400 gas (8 looksups) max
     /// @param _headerHash  The LE double-sha2 header hash
     /// @return             The number of headers on top
-    function _getConfs(bytes32 _headerHash) internal view returns (uint8) {
+    function _getConfs(bytes32 _headerHash)  virtual internal view returns (uint8) {
         return uint8(_findHeight(bestKnownDigest) - _findHeight(_headerHash));
     }
 

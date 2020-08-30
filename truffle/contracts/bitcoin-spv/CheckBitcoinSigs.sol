@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title CheckBitcoinSigs */
 /** @author Summa (https://summa.one) */

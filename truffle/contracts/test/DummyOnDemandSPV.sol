@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title OnDemandSPV */
 /** @author Summa (https://summa.one) */
@@ -22,7 +24,7 @@ contract DummyConsumer is ISPVConsumer {
         uint256 _requestID,
         uint8,
         uint8
-    ) external {
+    ) override external {
         emit Consumed(_txid, _requestID, gasleft());
         if (broken) {
             revert("BORKED");
@@ -70,7 +72,7 @@ contract DummyOnDemandSPV is OnDemandSPV {
         callResult = _r;
     }
 
-    function _isAncestor(bytes32, bytes32, uint256) internal view returns (bool) {
+    function _isAncestor(bytes32, bytes32, uint256) override internal view returns (bool) {
         return callResult;
     }
 
@@ -112,7 +114,7 @@ contract DummyOnDemandSPV is OnDemandSPV {
         );
     }
 
-    function _getConfs(bytes32 _header) internal view returns (uint8){
+    function _getConfs(bytes32 _header) override internal view returns (uint8){
         if (_header == bytes32(0)) {
             return OnDemandSPV._getConfs(lastReorgCommonAncestor);
         }

@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title ViewSPV */
 /** @author Summa (https://summa.one) */
@@ -99,7 +101,7 @@ library ViewSPV {
     /// @notice             Checks validity of header chain
     /// @notice             Compares the hash of each header to the prevHash in the next header
     /// @param _headers     Raw byte array of header chain
-    /// @return             The total accumulated difficulty of the header chain, or an error code
+    /// @return             _totalDifficulty The total accumulated difficulty of the header chain, or an error code
     function checkChain(bytes29 _headers) internal view typeAssert(_headers, ViewBTC.BTCTypes.HeaderArray) returns (uint256 _totalDifficulty) {
         bytes32 _digest;
         uint256 _headerCount = _headers.len() / 80;

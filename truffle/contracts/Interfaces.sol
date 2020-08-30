@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /// @title      ISPVConsumer
 /// @author     Summa (https://summa.one)
@@ -131,11 +133,14 @@ interface ISPVRequestManager {
     /// @notice             Retrieve info about a request
     /// @dev                Requests ids are numerical
     /// @param  _requestID  The numerical ID of the request
-    /// @return             A tuple representation of the request struct.
-    ///                     To save space`spends` and `pays` are stored as keccak256
-    ///                     hashes of the original information. The `state` is
-    ///                     `0` for "does not exist", `1` for "active" and `2` for
-    ///                     "cancelled."
+    /// @return             spends To save space `spends` are stored as keccak256 hashes of the original information
+    /// @return             pays To save space `pays` are stored as keccak256 hashes of the original information
+    /// @return             paysValue
+    /// @return             state The `state` is `0` for "does not exist", `1` for "active" and `2` for "cancelled."
+    /// @return             consumer 
+    /// @return             owner 
+    /// @return             numConfs 
+    /// @return             notBefore
     function getRequest(
         uint256 _requestID
     ) external view returns (

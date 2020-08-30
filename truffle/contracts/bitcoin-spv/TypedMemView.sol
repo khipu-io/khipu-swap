@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 import {SafeMath} from "./SafeMath.sol";
 
@@ -123,7 +125,7 @@ library TypedMemView {
     /// @notice          Changes the endianness of a uint256
     /// @dev             https://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel
     /// @param _b        The unsigned integer to reverse
-    /// @return          The reversed value
+    /// @return          v The reversed value
     function reverseUint256(uint256 _b) internal pure returns (uint256 v) {
         v = _b;
 
@@ -425,37 +427,37 @@ library TypedMemView {
         assembly {
             // solium-disable-previous-line security/no-inline-assembly
             let ptr := mload(0x40)
-            pop(staticcall(gas, 2, _loc, _len, ptr, 0x20)) // sha2 #1
+            pop(staticcall(gas(), 2, _loc, _len, ptr, 0x20)) // sha2 #1
             digest := mload(ptr)
         }
     }
 
     /// @notice          Implements bitcoin's hash160 (rmd160(sha2()))
     /// @param memView   The pre-image
-    /// @return          The digest
+    /// @return          digest
     function hash160(bytes29 memView) internal view returns (bytes20 digest) {
         uint256 _loc = loc(memView);
         uint256 _len = len(memView);
         assembly {
             // solium-disable-previous-line security/no-inline-assembly
             let ptr := mload(0x40)
-            pop(staticcall(gas, 2, _loc, _len, ptr, 0x20)) // sha2
-            pop(staticcall(gas, 3, ptr, 0x20, ptr, 0x20)) // rmd160
+            pop(staticcall(gas(), 2, _loc, _len, ptr, 0x20)) // sha2
+            pop(staticcall(gas(), 3, ptr, 0x20, ptr, 0x20)) // rmd160
             digest := mload(add(ptr, 0xc)) // return value is 0-prefixed.
         }
     }
 
     /// @notice          Implements bitcoin's hash256 (double sha2)
     /// @param memView   A view of the preimage
-    /// @return          The digest
+    /// @return          digest
     function hash256(bytes29 memView) internal view returns (bytes32 digest) {
         uint256 _loc = loc(memView);
         uint256 _len = len(memView);
         assembly {
             // solium-disable-previous-line security/no-inline-assembly
             let ptr := mload(0x40)
-            pop(staticcall(gas, 2, _loc, _len, ptr, 0x20)) // sha2 #1
-            pop(staticcall(gas, 2, ptr, 0x20, ptr, 0x20)) // sha2 #2
+            pop(staticcall(gas(), 2, _loc, _len, ptr, 0x20)) // sha2 #1
+            pop(staticcall(gas(), 2, ptr, 0x20, ptr, 0x20)) // sha2 #2
             digest := mload(ptr)
         }
     }
@@ -505,7 +507,7 @@ library TypedMemView {
 
             // use the identity precompile to copy
             // guaranteed not to fail, so pop the success
-            pop(staticcall(gas, 4, _oldLoc, _len, _newLoc, _len))
+            pop(staticcall(gas(), 4, _oldLoc, _len, _newLoc, _len))
         }
 
         written = buildUnchecked(typeOf(memView), _newLoc, _len);

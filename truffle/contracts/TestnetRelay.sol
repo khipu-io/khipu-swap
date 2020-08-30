@@ -1,4 +1,6 @@
-pragma solidity ^0.5.10;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity >=0.6.0 <=0.7.0;
 
 /** @title TestnetRelay */
 /** @author Summa (https://summa.one) */
@@ -40,8 +42,8 @@ contract TestnetRelay is OnDemandSPV {
     /// @param  _anchor     The header immediately preceeding the new chain
     /// @param  _headers    A tightly-packed list of new 80-byte Bitcoin headers to record
     /// @return             True if successfully written, error otherwise
-    function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) internal returns (bool) {
-        /// Extract basic info
+    function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) override internal returns (bool) {
+        // Extract basic info
         bytes32 _previousDigest = _anchor.hash256();
         uint256 _anchorHeight = _findHeight(_previousDigest);  /* NB: errors if unknown */
         uint256 _target = _headers.indexHeaderArray(0).target();
